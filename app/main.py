@@ -1,217 +1,13 @@
-# import tkinter as tk
-# from tkinter import messagebox
-# from datetime import datetime
-# import logging
-
-# from app.db import get_connection
-# from app.questions import load_questions
-# from app.utils import compute_age_group
-# from app.models import (
-#     ensure_scores_schema,
-#     ensure_responses_schema,
-#     ensure_question_bank_schema
-# )
-
-# # --------------------------------------------------
-# # Logging
-# # --------------------------------------------------
-# logging.basicConfig(
-#     filename="logs/soulsense.log",
-#     level=logging.INFO,
-#     format="%(asctime)s [%(levelname)s] %(message)s"
-# )
-
-# # --------------------------------------------------
-# # DB setup (run once on startup)
-# # --------------------------------------------------
-# def initialize_db():
-#     conn = get_connection()
-#     cursor = conn.cursor()
-
-#     ensure_question_bank_schema(cursor)
-#     ensure_scores_schema(cursor)
-#     ensure_responses_schema(cursor)
-
-#     conn.commit()
-#     conn.close()
-
-
-# # --------------------------------------------------
-# # Tkinter App
-# # --------------------------------------------------
-# class SoulSenseApp:
-#     def __init__(self, root):
-#         self.root = root
-#         self.root.title("Soul Sense Exam")
-#         self.root.geometry("600x400")
-
-#         self.username = ""
-#         self.age = None
-#         self.age_group = "unknown"
-
-#         self.questions = load_questions()  # [(id, text), ...]
-#         self.current_index = 0
-#         self.responses = []
-
-#         self.build_user_info_screen()
-
-#     # -------------------------
-#     # Screen 1: User Info
-#     # -------------------------
-#     def build_user_info_screen(self):
-#         self.clear_screen()
-
-#         tk.Label(self.root, text="Soul Sense Exam", font=("Arial", 18)).pack(pady=20)
-
-#         tk.Label(self.root, text="Username").pack()
-#         self.username_entry = tk.Entry(self.root)
-#         self.username_entry.pack()
-
-#         tk.Label(self.root, text="Age").pack()
-#         self.age_entry = tk.Entry(self.root)
-#         self.age_entry.pack()
-
-#         tk.Button(self.root, text="Start Exam", command=self.start_exam).pack(pady=20)
-
-#     def start_exam(self):
-#         self.username = self.username_entry.get().strip()
-#         age_raw = self.age_entry.get().strip()
-
-#         if not self.username:
-#             messagebox.showerror("Error", "Username required")
-#             return
-
-#         try:
-#             self.age = int(age_raw)
-#         except Exception:
-#             self.age = None
-
-#         self.age_group = compute_age_group(self.age)
-#         logging.info(f"User started exam: {self.username}, age_group={self.age_group}")
-
-#         self.build_question_screen()
-
-#     # -------------------------
-#     # Screen 2: Questions
-#     # -------------------------
-#     def build_question_screen(self):
-#         self.clear_screen()
-
-#         q_id, q_text = self.questions[self.current_index]
-
-#         tk.Label(
-#             self.root,
-#             text=f"Question {self.current_index + 1} of {len(self.questions)}",
-#             font=("Arial", 12)
-#         ).pack(pady=10)
-
-#         tk.Label(
-#             self.root,
-#             text=q_text,
-#             wraplength=500,
-#             font=("Arial", 14)
-#         ).pack(pady=20)
-
-#         self.answer_var = tk.IntVar(value=0)
-
-#         for i in range(1, 6):
-#             tk.Radiobutton(
-#                 self.root,
-#                 text=str(i),
-#                 variable=self.answer_var,
-#                 value=i
-#             ).pack(anchor="w", padx=200)
-
-#         tk.Button(self.root, text="Next", command=self.save_and_next).pack(pady=20)
-
-#     def save_and_next(self):
-#         value = self.answer_var.get()
-
-#         if value == 0:
-#             messagebox.showerror("Error", "Please select an answer")
-#             return
-
-#         q_id, _ = self.questions[self.current_index]
-
-#         self.responses.append({
-#             "question_id": q_id,
-#             "value": value
-#         })
-
-#         self.current_index += 1
-
-#         if self.current_index >= len(self.questions):
-#             self.finish_exam()
-#         else:
-#             self.build_question_screen()
-
-#     # -------------------------
-#     # Finish + Save to DB
-#     # -------------------------
-#     def finish_exam(self):
-#         conn = get_connection()
-#         cursor = conn.cursor()
-
-#         timestamp = datetime.utcnow().isoformat()
-
-#         for r in self.responses:
-#             cursor.execute(
-#                 """
-#                 INSERT INTO responses
-#                 (username, question_id, response_value, age_group, timestamp)
-#                 VALUES (?, ?, ?, ?, ?)
-#                 """,
-#                 (
-#                     self.username,
-#                     r["question_id"],
-#                     r["value"],
-#                     self.age_group,
-#                     timestamp
-#                 )
-#             )
-
-#         conn.commit()
-#         conn.close()
-
-#         logging.info(f"Exam completed for {self.username}")
-
-#         self.clear_screen()
-#         tk.Label(
-#             self.root,
-#             text="Thank you for completing the exam!",
-#             font=("Arial", 16)
-#         ).pack(pady=50)
-
-#         tk.Button(self.root, text="Exit", command=self.root.quit).pack()
-
-#     # -------------------------
-#     # Utility
-#     # -------------------------
-#     def clear_screen(self):
-#         for widget in self.root.winfo_children():
-#             widget.destroy()
-
-
-# # --------------------------------------------------
-# # Entry point
-# # --------------------------------------------------
-# if __name__ == "__main__":
-#     initialize_db()
-
-#     root = tk.Tk()
-#     app = SoulSenseApp(root)
-#     root.mainloop()
-
-
-
-
-
-
 import tkinter as tk
-from tkinter import messagebox ,ttk  #imported the ttk
+from tkinter import messagebox, ttk
 import logging
 import sys
 from datetime import datetime
+
+# --- NEW IMPORTS FOR GRAPHS ---
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from app.db import get_connection
 from app.models import (
@@ -250,28 +46,6 @@ ensure_question_bank_schema(cursor)
 
 conn.commit()
 
-# ---------------- LOAD QUESTIONS FROM DB ----------------
-try:
-    rows = load_questions()  # [(id, text)]
-    questions = [q[1] for q in rows]   # preserve text only
-    
-    '''
-    reading only 10 for testing
-    '''
-    
-    questions = questions[:10]
-    
-    if not questions:
-        
-        raise RuntimeError("Question bank empty")
-
-    logging.info("Loaded %s questions from DB", len(questions))
-
-except Exception:
-    logging.critical("Failed to load questions from DB", exc_info=True)
-    messagebox.showerror("Fatal Error", "Question bank could not be loaded.")
-    sys.exit(1)
-
 # ---------------- GUI ----------------
 class SoulSenseApp:
     def __init__(self, root):
@@ -286,7 +60,7 @@ class SoulSenseApp:
 
 
         self.current_question = 0
-        self.total_questions = len(questions) #length of the questions
+        self.total_questions = 0
         self.responses = []
 
         self.create_username_screen()
@@ -426,6 +200,30 @@ class SoulSenseApp:
         self.age = age
         self.age_group = compute_age_group(age)
 
+        # -------- LOAD AGE-APPROPRIATE QUESTIONS --------
+        # This logic is PRESERVED from the original file
+        try:
+            print(self.age)
+            rows = load_questions(age=self.age)  # [(id, text)]
+            self.questions = [q[1] for q in rows]
+
+            # temporary limit (existing behavior)
+            self.questions = self.questions[:10]
+            
+            # Added for Progress Bar logic
+            self.total_questions = len(self.questions)
+
+            if not self.questions:
+                raise RuntimeError("No questions loaded")
+
+        except Exception:
+            logging.error("Failed to load age-appropriate questions", exc_info=True)
+            messagebox.showerror(
+                "Error",
+                "No questions available for your age group."
+            )
+            return
+
         logging.info(
             "Session started | user=%s | age=%s | education=%s | age_group=%s",
             self.username, self.age, self.education, self.age_group
@@ -436,16 +234,19 @@ class SoulSenseApp:
 
     def show_question(self):
         self.clear_screen()
-        # -------- Progress Bar --------
+        
+        # --- NEW: Progress Bar ---
         progress_frame = tk.Frame(self.root)
         progress_frame.pack(pady=5)
+
+        max_val = self.total_questions if self.total_questions > 0 else 10
 
         self.progress = ttk.Progressbar(
             progress_frame,
             orient="horizontal",
             length=300,
             mode="determinate",
-            maximum=self.total_questions,
+            maximum=max_val,
             value=self.current_question
         )
         self.progress.pack()
@@ -457,16 +258,17 @@ class SoulSenseApp:
         )
         self.progress_label.pack()
 
-
-        if self.current_question >= len(questions):
+        if self.current_question >= len(self.questions):
             self.finish_test()
             return
 
-        q = questions[self.current_question]
+        q = self.questions[self.current_question]
+
         tk.Label(
             self.root,
             text=f"Q{self.current_question + 1}: {q}",
-            wraplength=400
+            wraplength=400,
+            font=("Arial", 12)
         ).pack(pady=20)
 
         self.answer_var = tk.IntVar()
@@ -477,7 +279,7 @@ class SoulSenseApp:
                 text=f"{txt} ({val})",
                 variable=self.answer_var,
                 value=val
-            ).pack(anchor="w", padx=50)
+            ).pack(anchor="w", padx=100)
 
         tk.Button(self.root, text="Next", command=self.save_answer).pack(pady=15)
 
@@ -508,9 +310,49 @@ class SoulSenseApp:
         self.current_question += 1
         self.show_question()
 
+    # ---------------- NEW: GRAPH GENERATION ----------------
+    def create_radar_chart(self, parent_frame, categories, values):
+        """
+        Creates a Radar/Spider chart embedded in a Tkinter frame.
+        """
+        N = len(categories)
+        values_closed = values + [values[0]]
+        angles = [n / float(N) * 2 * np.pi for n in range(N)]
+        angles += [angles[0]]
+
+        fig = plt.Figure(figsize=(4, 4), dpi=100)
+        ax = fig.add_subplot(111, polar=True)
+
+        plt.xticks(angles[:-1], categories)
+        
+        ax.plot(angles, values_closed, linewidth=2, linestyle='solid', color='blue')
+        ax.fill(angles, values_closed, 'blue', alpha=0.1)
+        
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(categories)
+
+        canvas = FigureCanvasTkAgg(fig, master=parent_frame)
+        canvas.draw()
+        return canvas.get_tk_widget()
+
     def finish_test(self):
         total_score = sum(self.responses)
+        
+        # --- NEW: SIMULATE CATEGORIES (Splitting questions) ---
+        r = self.responses
+        cat1_score = sum(r[0:3]) if len(r) > 0 else 0
+        cat2_score = sum(r[3:6]) if len(r) > 3 else 0
+        cat3_score = sum(r[6:10]) if len(r) > 6 else 0
 
+        # Normalize to scale of 10 for graph
+        vals_normalized = [
+            (cat1_score / 12) * 10,
+            (cat2_score / 12) * 10,
+            (cat3_score / 16) * 10
+        ]
+        categories = ["Self-Awareness", "Empathy", "Social Skills"]
+
+        # Save to DB
         try:
             cursor.execute(
                 "INSERT INTO scores (username, age, total_score) VALUES (?, ?, ?)",
@@ -521,22 +363,44 @@ class SoulSenseApp:
             logging.error("Failed to store final score", exc_info=True)
 
         interpretation = (
-            "Excellent Emotional Intelligence!" if total_score >= 65 else
-            "Good Emotional Intelligence." if total_score >= 50 else
-            "Average Emotional Intelligence." if total_score >= 35 else
-            "You may want to work on your Emotional Intelligence."
+            "Excellent Emotional Intelligence!" if total_score >= 30 else
+            "Good Emotional Intelligence." if total_score >= 20 else
+            "Average Emotional Intelligence." if total_score >= 15 else
+            "Room for improvement."
         )
 
+        # --- UPDATED: Build Result Screen ---
         self.clear_screen()
-        tk.Label(self.root, text=f"Thank you, {self.username}!", font=("Arial", 16)).pack(pady=10)
-        tk.Label(
-            self.root,
-            text=f"Your total EQ score is: {total_score} / {len(self.responses) * 4}",
-            font=("Arial", 14)
-        ).pack(pady=10)
-        tk.Label(self.root, text=interpretation, font=("Arial", 14), fg="blue").pack(pady=10)
+        self.root.geometry("800x600") # Resize for results
 
-        tk.Button(self.root, text="Exit", command=self.force_exit, font=("Arial", 12)).pack(pady=20)
+        # Left Side: Text Results
+        left_frame = tk.Frame(self.root)
+        left_frame.pack(side=tk.LEFT, padx=20, fill=tk.Y)
+
+        tk.Label(left_frame, text=f"Results for {self.username}", font=("Arial", 18, "bold")).pack(pady=20)
+        tk.Label(
+            left_frame,
+            text=f"Total Score: {total_score}",
+            font=("Arial", 16)
+        ).pack(pady=10)
+        tk.Label(left_frame, text=interpretation, font=("Arial", 14), fg="blue", wraplength=250).pack(pady=10)
+
+        tk.Label(left_frame, text="Breakdown:", font=("Arial", 12, "bold")).pack(pady=(20,5))
+        tk.Label(left_frame, text=f"Self-Awareness: {cat1_score}/12").pack()
+        tk.Label(left_frame, text=f"Empathy: {cat2_score}/12").pack()
+        tk.Label(left_frame, text=f"Social Skills: {cat3_score}/16").pack()
+
+        tk.Button(left_frame, text="Exit", command=self.force_exit, font=("Arial", 12), bg="#ffcccc").pack(pady=40)
+
+        # Right Side: Graph
+        right_frame = tk.Frame(self.root, bg="white")
+        right_frame.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH, padx=20, pady=20)
+
+        tk.Label(right_frame, text="Visual Analysis", bg="white", font=("Arial", 12)).pack(pady=5)
+        
+        # Embed the chart
+        chart_widget = self.create_radar_chart(right_frame, categories, vals_normalized)
+        chart_widget.pack(fill=tk.BOTH, expand=True)
 
     def force_exit(self):
         try:
